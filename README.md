@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # 🎓 Student Help Desk Portal
 
 An AI-powered **Student Help Desk System** built to simplify how students raise issues and how administrators manage and resolve them efficiently.
@@ -268,3 +269,7 @@ The aim of this project is to build a **modern AI-powered help desk system** tha
 # ⭐ If you like this project
 
 Give it a ⭐ on GitHub!
+=======
+# mmmut-helpdesk
+A modern Student Help Desk Portal designed to streamline campus support services using an AI-powered chatbot, structured ticketing system, and an admin dashboard. Built for a college hackathon, this project focuses on real-world usability, human-centric UI, and scalable architecture rather than a “boxy AI demo”.
+>>>>>>> 29fa9d77bcf47175d6250f61d9d1c18c80ccb85e
