@@ -1,147 +1,81 @@
 import { NextResponse } from "next/server"
-import fs from "fs"
-import path from "path"
+import mongoose from "mongoose"
 
-interface Ticket {
-  id: string
-  title: string
-  description: string
-  status: "open" | "in-progress" | "resolved" | "closed"
-  priority: "low" | "medium" | "high" | "urgent"
-  createdAt: string
-  updatedAt: string
-  category: string
+// 1. Database Connection Logic
+const MONGODB_URI = process.env.MONGODB_URI;
+
+if (!MONGODB_URI) {
+  throw new Error("Please define the MONGODB_URI environment variable");
 }
 
-const dataDir = path.join(process.cwd(), "data")
-const filePath = path.join(dataDir, "tickets.json")
-
-// ensure data folder exists
-if (!fs.existsSync(dataDir)) {
-  fs.mkdirSync(dataDir)
+async function connectDB() {
+  if (mongoose.connection.readyState >= 1) return;
+  return mongoose.connect(MONGODB_URI as string);
 }
 
-// ensure tickets file exists
-if (!fs.existsSync(filePath)) {
-  fs.writeFileSync(filePath, JSON.stringify([]))
-}
+// 2. Ticket Schema (MongoDB ke liye)
+const TicketSchema = new mongoose.Schema({
+  id: String,
+  title: String,
+  description: String,
+  status: { type: String, enum: ["open", "in-progress", "resolved", "closed"], default: "open" },
+  priority: { type: String, enum: ["low", "medium", "high", "urgent"] },
+  category: String,
+  createdAt: { type: String, default: () => new Date().toISOString() },
+  updatedAt: { type: Date, default: Date.now }
+});
 
-// read tickets
-function getTickets(): Ticket[] {
-  const data = fs.readFileSync(filePath, "utf8")
-  return JSON.parse(data)
-}
+// Model initialization
+const Ticket = mongoose.models.Ticket || mongoose.model("Ticket", TicketSchema);
 
-// save tickets
-function saveTickets(tickets: Ticket[]) {
-  fs.writeFileSync(filePath, JSON.stringify(tickets, null, 2))
-}
-
-
-// ensure dummy tickets exist
-function ensureInitialTickets() {
-
-  let tickets = getTickets()
-
-  const defaultTickets: Ticket[] = [
-
-    {
-      id:"#1022",
-      title:"Grade dispute regarding exam",
-      description:"Your dispute has been resolved by the Academic Team",
-      status:"resolved",
-      priority:"medium",
-      category:"academic",
-      createdAt:"2026-03-14T10:00:00.000Z",
-      updatedAt:"2026-03-14T10:00:00.000Z"
-    },
-
-    {
-      id:"#1023",
-      title:"Course material not loading",
-      description:"Our support team is currently working on your issue",
-      status:"in-progress",
-      priority:"high",
-      category:"technical",
-      createdAt:"2026-03-15T10:00:00.000Z",
-      updatedAt:"2026-03-15T10:00:00.000Z"
-    },
-
-    {
-      id:"#1024",
-      title:"Lab assignment submission issue",
-      description:"We received your request and will respond shortly",
-      status:"open",
-      priority:"medium",
-      category:"academic",
-      createdAt:"2026-03-15T11:00:00.000Z",
-      updatedAt:"2026-03-15T11:00:00.000Z"
-    }
-
-  ]
-
-  defaultTickets.forEach(ticket => {
-
-    if (!tickets.find(t => t.id === ticket.id)) {
-      tickets.push(ticket)
-    }
-
-  })
-
-  saveTickets(tickets)
-}
-
-
-// GET → return all tickets
+// 3. GET → Database se tickets lao
 export async function GET() {
+  try {
+    await connectDB();
+    let tickets = await Ticket.find({}).sort({ createdAt: -1 });
 
-  // 🔥 IMPORTANT
-  ensureInitialTickets()
+    // Agar database khali hai toh initial data daal do (First time only)
+    if (tickets.length === 0) {
+      const defaultTickets = [
+        { id: "#1022", title: "Grade dispute regarding exam", description: "Resolved by Academic Team", status: "resolved", priority: "medium", category: "academic" },
+        { id: "#1023", title: "Course material not loading", description: "Working on your issue", status: "in-progress", priority: "high", category: "technical" }
+      ];
+      await Ticket.insertMany(defaultTickets);
+      tickets = await Ticket.find({}).sort({ createdAt: -1 });
+    }
 
-  const tickets = getTickets()
-
-  return NextResponse.json(tickets)
-
+    return NextResponse.json(tickets);
+  } catch (error) {
+    console.error("Database error:", error);
+    return NextResponse.json({ error: "Failed to fetch tickets" }, { status: 500 });
+  }
 }
 
-
-// POST → create ticket
+// 4. POST → Database mein naya ticket save karo
 export async function POST(req: Request) {
-
   try {
+    await connectDB();
+    const body = await req.json();
 
-    const body = await req.json()
+    // Ticket count nikalne ke liye taaki ID generate ho sake
+    const count = await Ticket.countDocuments();
 
-    const tickets = getTickets()
-
-    const newTicket: Ticket = {
-
-      id: `#${1000 + tickets.length + 1}`,
+    const newTicket = await Ticket.create({
+      id: `#${1000 + count + 1}`,
       title: body.title,
       description: body.description,
       category: body.category,
       priority: body.priority,
       status: "open",
       createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
+    });
 
-    }
-
-    tickets.unshift(newTicket)
-
-    saveTickets(tickets)
-
-    return NextResponse.json(newTicket, { status: 201 })
-
+    return NextResponse.json(newTicket, { status: 201 });
   } catch (error) {
-
-    console.error("Ticket creation error:", error)
-
+    console.error("Ticket creation error:", error);
     return NextResponse.json(
-      { error: "Failed to create ticket" },
+      { error: "Failed to create ticket in database" },
       { status: 500 }
-    )
-
+    );
   }
-
 }

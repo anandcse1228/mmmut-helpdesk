@@ -1,5 +1,15 @@
 [
   {
+    "id": "#1007",
+    "title": "The water cooler is not working",
+    "description": "The water cooler of vs hostel of my wing is not working . I have to go to the mess to fill my water bottle . So please try to resolve this as soon as possible.",
+    "category": "other",
+    "priority": "high",
+    "status": "open",
+    "createdAt": "2026-03-17T11:30:57.211Z",
+    "updatedAt": "2026-03-17T11:30:57.211Z"
+  },
+  {
     "id": "#1006",
     "title": "Hostel mess fee submission issue",
     "description": "i was not able to submit my hostel mess fee on the given qr code by mess . so i request you to kindly look into the matter",

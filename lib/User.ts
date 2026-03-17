@@ -1,6 +1,9 @@
 import mongoose from "mongoose"
 import { hashPassword } from "@/lib/auth"
 
+// Next.js Serverless environment mein hume ensure karna padta hai ki 
+// model baar-baar compile na ho, isliye hum mongoose.models.User check karte hain.
+
 const userSchema = new mongoose.Schema(
   {
     email: {
@@ -8,12 +11,13 @@ const userSchema = new mongoose.Schema(
       required: [true, "Please provide an email"],
       unique: true,
       lowercase: true,
+      trim: true, // Extra spaces hata dega
       match: [/^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/, "Please provide a valid email"],
     },
     password: {
       type: String,
       required: [true, "Please provide a password"],
-      select: false,
+      select: false, // Login ke time pe password security ke liye hidden rahega jab tak hum explicitly select na karein
     },
     role: {
       type: String,
@@ -25,13 +29,27 @@ const userSchema = new mongoose.Schema(
       required: false,
     },
   },
-  { timestamps: true },
+  { 
+    timestamps: true,
+    // Ye line important hai agar aapka database already exists hai
+    strict: true 
+  }
 )
 
-userSchema.pre("save", async function () {
-  if (!this.isModified("password")) return
+// Password hashing middleware
+userSchema.pre("save", async function (next) {
+  if (!this.isModified("password")) {
+    return next();
+  }
 
-  this.password = await hashPassword(this.password)
+  try {
+    this.password = await hashPassword(this.password);
+    next();
+  } catch (error: any) {
+    next(error);
+  }
 })
 
+// Model Export
+// mongoose.models.User check karta hai ki model pehle se register hai ya nahi
 export const User = mongoose.models.User || mongoose.model("User", userSchema)
