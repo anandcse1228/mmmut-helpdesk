@@ -1,5 +1,6 @@
 "use client"
 
+import AuthGuard from "@/components/auth-guard"
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import { ArrowRight } from "lucide-react"
@@ -47,6 +48,8 @@ fetchTickets()
 }, [])
 
 return (
+
+<AuthGuard>
 
 <div className="max-w-5xl mx-auto px-8 py-10 text-white">
 
@@ -107,6 +110,7 @@ return (
 
 </div>
 
+</AuthGuard>
 
 )
 

@@ -1,8 +1,9 @@
 "use client"
 
+import AuthGuard from "@/components/auth-guard"
 import { useParams } from "next/navigation"
-import { useEffect, useState } from "react"
-import { AlertCircle, Clock, CheckCircle } from "lucide-react"
+import { useState, useEffect } from "react"
+import { Clock, AlertCircle, CheckCircle, MessageCircle, Zap } from "lucide-react"
 
 interface Ticket {
   id: string
@@ -13,6 +14,14 @@ interface Ticket {
   createdAt: string
   updatedAt: string
   category: string
+  adminReply?: string
+}
+
+interface Comment {
+  id: number
+  user: string
+  message: string
+  time: string
 }
 
 function timeAgo(dateString: string) {
@@ -31,29 +40,64 @@ function timeAgo(dateString: string) {
   return "Just now"
 }
 
-export default function AdminManageTicket() {
+function getAdminResponse(category: string) {
+  switch (category) {
+    case "academic":
+      return "The academic department has received your request and will review it shortly."
+    case "technical":
+      return "Our technical team is currently investigating the issue."
+    case "account":
+      return "Our support team is checking your account access issue."
+    default:
+      return "Our support team will review your request shortly."
+  }
+}
+
+export default function TicketDetailsPage() {
 
   const params = useParams()
   const ticketId = params.id
 
   const [ticket, setTicket] = useState<Ticket | null>(null)
   const [status, setStatus] = useState("open")
-  const [reply, setReply] = useState("")
+  const [comments, setComments] = useState<Comment[]>([])
+  const [newComment, setNewComment] = useState("")
+  const [role, setRole] = useState("STUDENT")
 
   useEffect(() => {
+
+    const storedRole = localStorage.getItem("role")
+    if (storedRole) setRole(storedRole)
 
     const fetchTicket = async () => {
 
       const res = await fetch("/api/tickets")
       const tickets = await res.json()
 
-      const found = tickets.find((t: Ticket) =>
-        t.id.replace("#", "") === ticketId
-      )
+      const found = tickets.find((t: Ticket) => t.id.replace("#", "") === ticketId)
 
       if (found) {
+
         setTicket(found)
         setStatus(found.status)
+
+        const adminReply = found.adminReply || getAdminResponse(found.category)
+
+        setComments([
+          {
+            id: 1,
+            user: "Student",
+            message: found.description,
+            time: timeAgo(found.createdAt),
+          },
+          {
+            id: 2,
+            user: "Admin",
+            message: adminReply,
+            time: timeAgo(found.updatedAt),
+          },
+        ])
+
       }
 
     }
@@ -62,18 +106,20 @@ export default function AdminManageTicket() {
 
   }, [ticketId])
 
-  const updateStatus = (newStatus: string) => {
-    setStatus(newStatus)
-    alert(`Ticket status updated to ${newStatus}`)
-  }
+  const addComment = () => {
 
-  const sendReply = () => {
+    if (!newComment.trim()) return
 
-    if (!reply.trim()) return
+    const comment: Comment = {
+      id: Date.now(),
+      user: role === "ADMIN" ? "Admin" : "Student",
+      message: newComment,
+      time: "Just now",
+    }
 
-    alert("Reply sent to student")
+    setComments([...comments, comment])
+    setNewComment("")
 
-    setReply("")
   }
 
   const getStatusIcon = () => {
@@ -92,99 +138,183 @@ export default function AdminManageTicket() {
 
   return (
 
+    <AuthGuard>
+
     <div className="max-w-4xl mx-auto px-8 py-10 text-white">
 
-      <p className="text-sm text-gray-400">Ticket ID</p>
+      {/* Ticket Header */}
 
-      <h1 className="text-3xl font-bold mb-4">
-        {ticket.id}
-      </h1>
+      <div className="mb-10">
 
-      <h2 className="text-xl font-semibold mb-2">
-        {ticket.title}
-      </h2>
+        <p className="text-sm text-gray-400">Ticket ID</p>
 
-      <p className="text-gray-400 mb-4">
-        {ticket.description}
-      </p>
+        <h1 className="text-3xl font-bold mb-4">
+          {ticket.id}
+        </h1>
 
-      <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm ${getStatusColor()}`}>
-        {getStatusIcon()}
-        {status}
+        <h2 className="text-xl font-semibold mb-2">
+          {ticket.title}
+        </h2>
+
+        <p className="text-gray-400 mb-4">
+          {ticket.description}
+        </p>
+
+        <div className="flex items-center gap-4">
+
+          <div
+            className={`flex items-center gap-2 px-3 py-1 rounded-full text-sm ${getStatusColor()}`}
+          >
+            {getStatusIcon()}
+            {status}
+          </div>
+
+          <div className="flex items-center gap-1 text-red-400">
+            <Zap className="w-4 h-4" />
+            High Priority
+          </div>
+
+        </div>
+
       </div>
 
-      <div className="mt-10">
+      {/* Timeline */}
+
+      <div className="mb-12">
 
         <h3 className="text-lg font-semibold mb-4">
           Ticket Timeline
         </h3>
 
-        <p className="text-sm">
-          Created {timeAgo(ticket.createdAt)}
-        </p>
+        <div className="space-y-4">
 
-        <p className="text-sm text-gray-400">
-          Last updated {timeAgo(ticket.updatedAt)}
-        </p>
+          <div className="border-l border-gray-700 pl-4">
+            <p className="text-sm text-gray-300">
+              Ticket created
+            </p>
+            <p className="text-xs text-gray-500">
+              {timeAgo(ticket.createdAt)}
+            </p>
+          </div>
+
+          <div className="border-l border-gray-700 pl-4">
+            <p className="text-sm text-gray-300">
+              Admin acknowledged ticket
+            </p>
+            <p className="text-xs text-gray-500">
+              {timeAgo(ticket.updatedAt)}
+            </p>
+          </div>
+
+        </div>
 
       </div>
 
-      <div className="mt-10">
+      {/* Discussion */}
 
-        <h3 className="text-lg font-semibold mb-4">
-          Reply to Student
+      <div className="mb-12">
+
+        <h3 className="text-lg font-semibold mb-6 flex items-center gap-2">
+          <MessageCircle className="w-5 h-5" />
+          Discussion
         </h3>
 
+        <div className="space-y-4">
+
+          {comments.map((comment) => (
+
+            <div
+              key={comment.id}
+              className={`flex ${comment.user === "Admin" ? "justify-end" : "justify-start"}`}
+            >
+
+              <div
+                className={`max-w-md px-4 py-3 rounded-2xl ${
+                  comment.user === "Admin"
+                    ? "bg-gradient-to-r from-purple-600 to-indigo-600 text-white"
+                    : "bg-white/10 text-gray-200"
+                }`}
+              >
+
+                <div className="flex justify-between text-xs opacity-70 mb-1">
+                  <span>{comment.user}</span>
+                  <span>{comment.time}</span>
+                </div>
+
+                <p>{comment.message}</p>
+
+              </div>
+
+            </div>
+
+          ))}
+
+        </div>
+
+      </div>
+
+      {/* Reply Box */}
+
+      <div className="mb-10">
+
         <textarea
-          value={reply}
-          onChange={(e) => setReply(e.target.value)}
-          placeholder="Write reply..."
+          value={newComment}
+          onChange={(e) => setNewComment(e.target.value)}
+          placeholder="Write a reply..."
           className="w-full p-4 rounded-xl bg-white/5 border border-white/10 outline-none"
         />
 
         <button
-          onClick={sendReply}
-          className="mt-4 px-6 py-2 bg-purple-600 rounded-lg"
+          onClick={addComment}
+          className="mt-4 px-6 py-2 bg-gradient-to-r from-purple-500 to-indigo-500 rounded-full"
         >
           Send Reply
         </button>
 
       </div>
 
-      <div className="mt-10">
+      {/* Admin Actions */}
 
-        <h3 className="text-lg font-semibold mb-4">
-          Update Ticket Status
-        </h3>
+      {role === "ADMIN" && (
 
-        <div className="flex gap-4">
+        <div>
 
-          <button
-            onClick={() => updateStatus("open")}
-            className="px-4 py-2 bg-yellow-600 rounded-lg"
-          >
-            Open
-          </button>
+          <h3 className="text-lg font-semibold mb-4">
+            Update Status
+          </h3>
 
-          <button
-            onClick={() => updateStatus("in-progress")}
-            className="px-4 py-2 bg-blue-600 rounded-lg"
-          >
-            In Progress
-          </button>
+          <div className="flex gap-3">
 
-          <button
-            onClick={() => updateStatus("resolved")}
-            className="px-4 py-2 bg-green-600 rounded-lg"
-          >
-            Resolve
-          </button>
+            <button
+              onClick={() => setStatus("open")}
+              className="px-4 py-2 bg-yellow-600 rounded-full text-sm"
+            >
+              Open
+            </button>
+
+            <button
+              onClick={() => setStatus("in-progress")}
+              className="px-4 py-2 bg-blue-600 rounded-full text-sm"
+            >
+              In Progress
+            </button>
+
+            <button
+              onClick={() => setStatus("resolved")}
+              className="px-4 py-2 bg-green-600 rounded-full text-sm"
+            >
+              Resolve
+            </button>
+
+          </div>
 
         </div>
 
-      </div>
+      )}
 
     </div>
+
+    </AuthGuard>
 
   )
 

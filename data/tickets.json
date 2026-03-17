@@ -1,5 +1,15 @@
 [
   {
+    "id": "#1005",
+    "title": "WiFi not working",
+    "description": "the wifi of the vs hostel is not working like the login to vs is not appearing in which we have to submit our roll number and password is not appearing so we are not able to use the wifi.",
+    "category": "other",
+    "priority": "medium",
+    "status": "open",
+    "createdAt": "2026-03-17T05:23:30.528Z",
+    "updatedAt": "2026-03-17T05:23:30.528Z"
+  },
+  {
     "id": "#1004",
     "title": "Unable to login to my student account",
     "description": "I am unable to log in to my student account on the university portal. \nWhenever I enter my correct email and password, the system either shows an authentication error or keeps loading without granting access.\n\nBecause of this issue, I cannot access my course materials, assignments, or important announcements. \nI have already tried resetting my password and clearing my browser cache, but the problem still persists.\n\nPlease help me regain access to my account as soon as possible so that I can continue my academic work without interruption.",

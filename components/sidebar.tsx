@@ -9,24 +9,23 @@ const navItems = [
   { href: "/chatbot", icon: MessageCircle, label: "AI Chatbot" },
   { href: "/create-ticket", icon: Plus, label: "Create Ticket" },
   { href: "/my-tickets", icon: TicketIcon, label: "My Tickets" },
-
-  // Admin panel direct tickets management open karega
   { href: "/admin/tickets", icon: Settings, label: "Admin Panel" },
 ]
 
 export function Sidebar() {
   const pathname = usePathname()
 
+  const isActiveRoute = (href: string) => {
+    if (href === "/") return pathname === "/"
+    return pathname.startsWith(href)
+  }
+
   return (
     <aside className="fixed left-0 top-16 h-[calc(100vh-4rem)] w-64 border-r border-primary/10 p-6 overflow-y-auto">
       <div className="space-y-2">
-
         {navItems.map((item) => {
           const Icon = item.icon
-
-          const isActive =
-            pathname === item.href ||
-            (item.href !== "/" && pathname.startsWith(item.href))
+          const isActive = isActiveRoute(item.href)
 
           return (
             <Link
@@ -48,7 +47,6 @@ export function Sidebar() {
             </Link>
           )
         })}
-
       </div>
     </aside>
   )

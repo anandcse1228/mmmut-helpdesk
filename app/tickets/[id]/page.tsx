@@ -1,5 +1,6 @@
 "use client"
 
+import AuthGuard from "@/components/auth-guard"
 import { useParams } from "next/navigation"
 import { useState, useEffect } from "react"
 import { Clock, AlertCircle, CheckCircle, MessageCircle, Zap } from "lucide-react"
@@ -136,6 +137,8 @@ export default function TicketDetailsPage() {
   if (!ticket) return null
 
   return (
+
+    <AuthGuard>
 
     <div className="max-w-4xl mx-auto px-8 py-10 text-white">
 
@@ -310,6 +313,8 @@ export default function TicketDetailsPage() {
       )}
 
     </div>
+
+    </AuthGuard>
 
   )
 
