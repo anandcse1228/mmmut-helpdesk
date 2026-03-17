@@ -37,18 +37,17 @@ const userSchema = new mongoose.Schema(
 )
 
 // Password hashing middleware
-userSchema.pre("save", async function (next) {
+userSchema.pre("save", async function () {
   if (!this.isModified("password")) {
-    return next();
+    return; // next() ki zaroorat nahi hai async function mein
   }
 
   try {
     this.password = await hashPassword(this.password);
-    next();
   } catch (error: any) {
-    next(error);
+    throw error; // Seedha error throw karo, Mongoose handle kar lega
   }
-})
+});
 
 // Model Export
 // mongoose.models.User check karta hai ki model pehle se register hai ya nahi
