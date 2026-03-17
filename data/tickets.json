@@ -1,5 +1,15 @@
 [
   {
+    "id": "#1006",
+    "title": "Hostel mess fee submission issue",
+    "description": "i was not able to submit my hostel mess fee on the given qr code by mess . so i request you to kindly look into the matter",
+    "category": "other",
+    "priority": "urgent",
+    "status": "open",
+    "createdAt": "2026-03-17T10:55:02.706Z",
+    "updatedAt": "2026-03-17T10:55:02.706Z"
+  },
+  {
     "id": "#1005",
     "title": "WiFi not working",
     "description": "the wifi of the vs hostel is not working like the login to vs is not appearing in which we have to submit our roll number and password is not appearing so we are not able to use the wifi.",
