@@ -1,62 +1,60 @@
-import { type NextRequest, NextResponse } from "next/server"
-import { connectDB } from "@/lib/db"
-import { User } from "@/lib/User"
+import mongoose from "mongoose";
+import { NextResponse } from "next/server";
+import { User } from "@/lib/User";
 
-export async function POST(request: NextRequest) {
+// Vercel build fix
+export const dynamic = 'force-dynamic';
+
+async function connectToDatabase() {
+  if (mongoose.connection.readyState >= 1) return;
+  
+  if (!process.env.MONGODB_URI) {
+    throw new Error("MONGODB_URI is missing in .env.local");
+  }
+  
+  await mongoose.connect(process.env.MONGODB_URI);
+}
+
+export async function POST(req: Request) {
   try {
-    console.log("[v0] Registration attempt started")
+    const body = await req.json();
+    const { email, password, name, role } = body;
 
-    await connectDB()
-    console.log("[v0] Database connected for registration")
-
-    const { email, password } = await request.json()
-    console.log("[v0] Registration request for email:", email)
+    console.log("Registering user:", email); // Terminal mein dikhega
 
     if (!email || !password) {
-      return NextResponse.json({ error: "Email and password are required" }, { status: 400 })
+      return NextResponse.json({ error: "Email and password are required" }, { status: 400 });
     }
 
-    const emailRegex = /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/
-    if (!emailRegex.test(email)) {
-      return NextResponse.json({ error: "Please provide a valid email address" }, { status: 400 })
-    }
+    await connectToDatabase();
 
-    if (password.length < 6) {
-      return NextResponse.json({ error: "Password must be at least 6 characters long" }, { status: 400 })
-    }
-
-    const existingUser = await User.findOne({ email: email.toLowerCase() })
-    console.log("[v0] Existing user check:", existingUser ? "User exists" : "No existing user")
-
+    // Check if user already exists
+    const existingUser = await User.findOne({ email: email.toLowerCase() });
     if (existingUser) {
-      return NextResponse.json({ error: "Email is already registered" }, { status: 409 })
+      return NextResponse.json({ error: "User already exists" }, { status: 400 });
     }
 
-    const newUser = new User({
+    // Naya user create karo
+    // Note: Password hashing User model ke pre-save hook mein ho rahi hai
+    const newUser = await User.create({
+      name: name || email.split('@')[0],
       email: email.toLowerCase(),
       password,
-      role: "STUDENT",
-    })
+      role: role || "STUDENT"
+    });
 
-    await newUser.save()
-    console.log("[v0] Student registered successfully:", email)
+    console.log("User created successfully!");
 
+    return NextResponse.json({
+      success: true,
+      user: { id: newUser._id, email: newUser.email }
+    }, { status: 201 });
+
+  } catch (error: any) {
+    console.error("Registration API Error:", error);
     return NextResponse.json(
-      {
-        message: "Registration successful",
-        user: {
-          id: newUser._id,
-          email: newUser.email,
-          role: newUser.role,
-        },
-      },
-      { status: 201 },
-    )
-  } catch (error) {
-    console.error("[v0] Registration error details:", {
-      message: error instanceof Error ? error.message : String(error),
-      stack: error instanceof Error ? error.stack : undefined,
-    })
-    return NextResponse.json({ error: "An error occurred during registration" }, { status: 500 })
+      { error: error.message || "Registration failed" },
+      { status: 500 }
+    );
   }
 }
