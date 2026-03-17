@@ -1,6 +1,7 @@
 import mongoose from "mongoose"
 import { hashPassword } from "@/lib/auth"
 
+// Schema definition
 const userSchema = new mongoose.Schema(
   {
     email: {
@@ -28,7 +29,7 @@ const userSchema = new mongoose.Schema(
   { timestamps: true }
 )
 
-// Middleware: next() hata kar simple async use kiya build error se bachne ke liye
+// Middleware: Hashing password
 userSchema.pre("save", async function () {
   if (!this.isModified("password")) return;
   
@@ -39,5 +40,12 @@ userSchema.pre("save", async function () {
   }
 });
 
-// IMPORTANT: Build error se bachne ke liye model check
-export const User = mongoose.models.User || mongoose.model("User", userSchema)
+/**
+ * IMPORTANT: Build error fix
+ * Vercel build ke waqt mongoose.models ko check karna zaroori hai.
+ * Hum 'User' model ko check kar rahe hain, agar wo exist karta hai toh wahi use karo, 
+ * warna naya register karo.
+ */
+const User = mongoose.models.User || mongoose.model("User", userSchema);
+
+export { User };
