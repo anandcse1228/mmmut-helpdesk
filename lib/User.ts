@@ -38,14 +38,17 @@ const userSchema = new mongoose.Schema(
 
 // Password hashing middleware
 userSchema.pre("save", async function () {
+  // Agar password change nahi hua toh kuch mat karo
   if (!this.isModified("password")) {
-    return; // next() ki zaroorat nahi hai async function mein
+    return; 
   }
 
   try {
+    // Hash the password
     this.password = await hashPassword(this.password);
   } catch (error: any) {
-    throw error; // Seedha error throw karo, Mongoose handle kar lega
+    // Agar koi error aaye toh throw kar do
+    throw error;
   }
 });
 
